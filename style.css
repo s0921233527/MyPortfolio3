@@ -9,6 +9,7 @@ body {
     margin: 0;
     padding: 20px;
     box-sizing: border-box;
+    overflow: hidden; /* 防止頁面滾動 */
 }
 
 h1 {
@@ -21,7 +22,7 @@ h1 {
 }
 
 
-/* --- 【新增】開始選單樣式 --- */
+/* --- 開始選單樣式 --- */
 #startMenu {
     background-color: #2a2a2a;
     padding: 20px 40px;
@@ -130,3 +131,58 @@ button:active { transform: scale(0.98); }
 #autoButton.auto-active { background-color: #f44336; }
 
 .instructions { margin-top: 15px; color: #aaa; }
+
+
+/* --- 手機虛擬方向鍵樣式 --- */
+#mobile-controls {
+    display: none; /* 預設在電腦上隱藏 */
+    grid-template-areas:
+        ". up ."
+        "left . right"
+        ". down .";
+    gap: 10px;
+    margin-top: 20px;
+    -webkit-user-select: none; /* 防止長按選取文字 */
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#mobile-controls button {
+    width: 60px;
+    height: 60px;
+    font-size: 2em;
+    background-color: #555;
+    border: 2px solid #888;
+    border-radius: 50%; /* 圓形按鈕 */
+    color: white;
+    touch-action: manipulation; /* 避免雙擊縮放延遲 */
+}
+
+#mobile-controls button:active {
+    background-color: #777;
+}
+
+#upBtn { grid-area: up; }
+#leftBtn { grid-area: left; }
+#rightBtn { grid-area: right; }
+#downBtn { grid-area: down; }
+
+
+/* --- 媒體查詢：當螢幕寬度小於 768px 時套用 --- */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* 螢幕小時邊距小一點 */
+    }
+
+    h1 {
+        font-size: 1.8em;
+    }
+
+    .instructions {
+        display: none; /* 手機上隱藏電腦版的操作提示 */
+    }
+
+    #mobile-controls {
+        display: grid; /* 在手機上顯示虛擬方向鍵 */
+    }
+}
