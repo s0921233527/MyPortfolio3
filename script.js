@@ -1,6 +1,8 @@
 // --- 取得 HTML 元素 ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+// 【新增】取得遊戲畫布的容器元素
+const gameContainer = document.querySelector('.game-container');
 // 選單畫面元素
 const startMenu = document.getElementById('startMenu');
 const speedSlider = document.getElementById('speedSlider');
@@ -27,26 +29,31 @@ const speedLevels = {
     1: 250, 2: 200, 3: 170, 4: 140, 5: 120,
     6: 100, 7: 85, 8: 70, 9: 60, 10: 50
 };
-
-// 【新增】闖關模式的詳細設定
 const CHALLENGE_MAX_LEVEL = 10;
-const CHALLENGE_FOOD_PER_LEVEL = 5; // 每5個食物升一級
-const CHALLENGE_INITIAL_SPEED = 150; // 第1關基礎速度延遲(ms)
-const CHALLENGE_LEVEL_SPEED_DECREASE = 10; // 每升一級，基礎速度延遲減少10ms
-const CHALLENGE_FOOD_SPEED_DECREASE = 2;   // 在同一關內，每吃一個食物，速度延遲再減少2ms
+const CHALLENGE_FOOD_PER_LEVEL = 5;
+const CHALLENGE_INITIAL_SPEED = 150;
+const CHALLENGE_LEVEL_SPEED_DECREASE = 10;
+const CHALLENGE_FOOD_SPEED_DECREASE = 2;
 
 // --- 遊戲狀態變數 ---
 let snake, food, direction, score, gameLoop;
 let isGameOver, isAutoMode, gameMode, gameSpeedDelay;
-// 【新增】闖關模式專用狀態變數
 let currentLevel, foodEatenInLevel;
 
-// --- 動態設定畫布大小 ---
+// --- 【大幅修改】動態設定畫布大小的函式 ---
 function setupCanvas() {
-    COLS = Math.floor(window.innerWidth * 0.9 / GRID_SIZE);
-    ROWS = Math.floor(window.innerHeight * 0.6 / GRID_SIZE);
+    // 取得 CSS Flexbox 分配給 game-container 的實際寬高
+    const containerWidth = gameContainer.clientWidth - 20; // 減去 padding
+    const containerHeight = gameContainer.clientHeight - 20; // 減去 padding
+
+    // 根據容器的實際大小來計算格數
+    COLS = Math.floor(containerWidth / GRID_SIZE);
+    ROWS = Math.floor(containerHeight / GRID_SIZE);
+
     COLS = Math.max(10, COLS);
     ROWS = Math.max(10, ROWS);
+
+    // 設定 canvas 的像素大小，使其不超過容器
     canvas.width = COLS * GRID_SIZE;
     canvas.height = ROWS * GRID_SIZE;
 }
@@ -56,6 +63,8 @@ function startGame(mode) {
     gameMode = mode;
     startMenu.classList.add('hidden');
     gameScreen.classList.remove('hidden');
+    
+    // 在開始遊戲時，先設定好畫布大小
     setupCanvas();
 
     if (gameMode === 'endless') {
@@ -63,22 +72,22 @@ function startGame(mode) {
         gameSpeedDelay = speedLevels[selectedSpeed];
         levelContainer.classList.add('hidden');
     } else { // challenge mode
-        // 【修改】初始化闖關模式的狀態
         currentLevel = 1;
         foodEatenInLevel = 0;
-        gameSpeedDelay = CHALLENGE_INITIAL_SPEED; // 設定第一關的初始速度
+        gameSpeedDelay = CHALLENGE_INITIAL_SPEED;
         levelContainer.classList.remove('hidden');
     }
     
     initGameLogic();
 }
 
+// ... (initGameLogic, update, 和其他所有函式都維持不變) ...
+
 function initGameLogic() {
     snake = [{ x: Math.floor(COLS / 2), y: Math.floor(ROWS / 2) }];
     direction = { x: 0, y: 0 };
     score = 0;
     scoreElement.textContent = score;
-    // 【修改】確保關卡顯示正確
     if (gameMode === 'challenge') {
         levelElement.textContent = currentLevel;
     }
@@ -86,7 +95,6 @@ function initGameLogic() {
     isAutoMode = false;
     autoButton.textContent = '啟用自動模式';
     autoButton.classList.remove('auto-active');
-    
     spawnFood();
     if (gameLoop) clearInterval(gameLoop);
     gameLoop = setInterval(update, gameSpeedDelay);
@@ -117,36 +125,23 @@ function update() {
         score++;
         scoreElement.textContent = score;
         spawnFood();
-
-        // 【大幅修改】套用新的闖關模式邏輯
         if (gameMode === 'challenge') {
             foodEatenInLevel++;
             let newSpeedDelay = gameSpeedDelay;
-
-            // 判斷是否達到最大等級
             if (currentLevel >= CHALLENGE_MAX_LEVEL) {
-                 // 到達滿級後，速度繼續微幅增加
                  newSpeedDelay = gameSpeedDelay - CHALLENGE_FOOD_SPEED_DECREASE;
             } 
-            // 判斷是否滿足升級條件
             else if (foodEatenInLevel >= CHALLENGE_FOOD_PER_LEVEL) {
                 currentLevel++;
                 foodEatenInLevel = 0;
-                // 計算新關卡的基礎速度
                 newSpeedDelay = CHALLENGE_INITIAL_SPEED - ((currentLevel - 1) * CHALLENGE_LEVEL_SPEED_DECREASE);
             } 
-            // 在關卡內，微調速度
             else {
-                // 先取得當前關卡的基礎速度
                 const currentLevelBaseSpeed = CHALLENGE_INITIAL_SPEED - ((currentLevel - 1) * CHALLENGE_LEVEL_SPEED_DECREASE);
-                // 在基礎速度上，根據已吃的食物數量進行微調
                 newSpeedDelay = currentLevelBaseSpeed - (foodEatenInLevel * CHALLENGE_FOOD_SPEED_DECREASE);
             }
-
-            // 更新速度（確保有最低速限制）
             gameSpeedDelay = Math.max(40, newSpeedDelay);
             levelElement.textContent = currentLevel;
-            
             clearInterval(gameLoop);
             gameLoop = setInterval(update, gameSpeedDelay);
         }
@@ -156,23 +151,14 @@ function update() {
     draw();
 }
 
-// --- 事件監聽 --- (此區塊所有程式碼維持不變)
 window.addEventListener('keydown', e => {
     if (isAutoMode) return;
     const key = e.key.toLowerCase();
     switch (key) {
-        case 'arrowup': case 'w':
-            if (direction.y !== 1) direction = { x: 0, y: -1 };
-            break;
-        case 'arrowdown': case 's':
-            if (direction.y !== -1) direction = { x: 0, y: 1 };
-            break;
-        case 'arrowleft': case 'a':
-            if (direction.x !== 1) direction = { x: -1, y: 0 };
-            break;
-        case 'arrowright': case 'd':
-            if (direction.x !== -1) direction = { x: 1, y: 0 };
-            break;
+        case 'arrowup': case 'w': if (direction.y !== 1) direction = { x: 0, y: -1 }; break;
+        case 'arrowdown': case 's': if (direction.y !== -1) direction = { x: 0, y: 1 }; break;
+        case 'arrowleft': case 'a': if (direction.x !== 1) direction = { x: -1, y: 0 }; break;
+        case 'arrowright': case 'd': if (direction.x !== -1) direction = { x: 1, y: 0 }; break;
     }
 });
 
@@ -180,9 +166,7 @@ function handleMobileControl(e, newDirection) {
     e.preventDefault();
     if (isAutoMode) return;
     if (snake.length > 1) {
-        if (newDirection.x === -direction.x && newDirection.y === -direction.y) {
-            return;
-        }
+        if (newDirection.x === -direction.x && newDirection.y === -direction.y) return;
     }
     direction = newDirection;
 }
@@ -192,9 +176,7 @@ downBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: 0, y: 1 
 leftBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: -1, y: 0 }));
 rightBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: 1, y: 0 }));
 
-speedSlider.addEventListener('input', e => {
-    speedValue.textContent = e.target.value;
-});
+speedSlider.addEventListener('input', e => { speedValue.textContent = e.target.value; });
 startEndlessButton.addEventListener('click', () => startGame('endless'));
 startChallengeButton.addEventListener('click', () => startGame('challenge'));
 
@@ -210,8 +192,6 @@ autoButton.addEventListener('click', () => {
     autoButton.classList.toggle('auto-active', isAutoMode);
 });
 
-
-// --- AI 演算法與輔助函式 --- (此區塊所有程式碼維持不變)
 function findBestDirection() {
     const head = snake[0];
     const possibleMoves = [{ x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }];
@@ -304,7 +284,6 @@ function showGameOver() {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white'; ctx.font = '40px Arial'; ctx.textAlign = 'center';
     ctx.fillText('遊戲結束', canvas.width / 2, canvas.height / 2 - 20);
-    // 【新增】在遊戲結束時，如果是闖關模式，額外顯示最終關卡
     if (gameMode === 'challenge') {
         ctx.font = '24px Arial';
         ctx.fillText(`最終關卡: ${currentLevel}`, canvas.width / 2, canvas.height / 2 + 20);
