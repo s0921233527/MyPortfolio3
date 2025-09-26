@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>貪食蛇遊戲 - 模式選擇</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>貪食蛇遊戲</h1>
+
+    <div id="startMenu">
+        <h2>選擇模式</h2>
+        <div class="mode-select">
+            <h3>無盡模式</h3>
+            <p>自由挑戰最高分！</p>
+            <div class="speed-control">
+                <label for="speedSlider">速度: <span id="speedValue">5</span></label>
+                <input type="range" id="speedSlider" min="1" max="10" value="5">
+            </div>
+            <button id="startEndlessButton" class="start-btn">開始無盡模式</button>
+        </div>
+        <div class="mode-select">
+            <h3>闖關模式</h3>
+            <p>速度會越來越快！</p>
+            <button id="startChallengeButton" class="start-btn">開始闖關模式</button>
+        </div>
+    </div>
+
+    <div id="gameScreen" class="hidden">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div class="info-container">
+            <div class="score-container">
+                <h2>分數: <span id="score">0</span></h2>
+            </div>
+            <div id="levelContainer" class="hidden">
+                <h2>關卡: <span id="level">1</span></h2>
+            </div>
+        </div>
+        <div class="controls">
+            <button id="autoButton">啟用自動模式</button>
+            <button id="restartButton">返回選單</button> </div>
+        <div class="instructions">
+            <p>使用方向鍵 (↑↓←→) 或 WASD 控制移動</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
