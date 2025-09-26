@@ -14,13 +14,15 @@ const levelContainer = document.getElementById('levelContainer');
 const levelElement = document.getElementById('level');
 const autoButton = document.getElementById('autoButton');
 const restartButton = document.getElementById('restartButton');
+// 手機控制按鈕
+const upBtn = document.getElementById('upBtn');
+const downBtn = document.getElementById('downBtn');
+const leftBtn = document.getElementById('leftBtn');
+const rightBtn = document.getElementById('rightBtn');
 
 // --- 遊戲設定 ---
 const GRID_SIZE = 20;
-const COLS = 30;
-const ROWS = 20;
-canvas.width = COLS * GRID_SIZE;
-canvas.height = ROWS * GRID_SIZE;
+let COLS, ROWS; // 改為 let 以便動態計算
 const speedLevels = {
     1: 250, 2: 200, 3: 170, 4: 140, 5: 120,
     6: 100, 7: 85, 8: 70, 9: 60, 10: 50
@@ -30,17 +32,34 @@ const speedLevels = {
 let snake, food, direction, score, gameLoop;
 let isGameOver, isAutoMode, gameMode, gameSpeedDelay;
 
+// --- 動態設定畫布大小 ---
+function setupCanvas() {
+    // 根據視窗大小和格子大小，計算出最大的欄數和列數
+    COLS = Math.floor(window.innerWidth * 0.9 / GRID_SIZE);
+    ROWS = Math.floor(window.innerHeight * 0.6 / GRID_SIZE);
+
+    // 確保 COLS 和 ROWS 至少為 10x10，避免在極端視窗下出錯
+    COLS = Math.max(10, COLS);
+    ROWS = Math.max(10, ROWS);
+
+    canvas.width = COLS * GRID_SIZE;
+    canvas.height = ROWS * GRID_SIZE;
+}
+
 // --- 主流程控制 ---
 function startGame(mode) {
     gameMode = mode;
     startMenu.classList.add('hidden');
     gameScreen.classList.remove('hidden');
 
+    // 在開始遊戲時，先設定好畫布大小
+    setupCanvas();
+
     if (gameMode === 'endless') {
         const selectedSpeed = speedSlider.value;
         gameSpeedDelay = speedLevels[selectedSpeed];
         levelContainer.classList.add('hidden');
-    } else {
+    } else { // challenge mode
         gameSpeedDelay = 150;
         levelContainer.classList.remove('hidden');
     }
@@ -121,26 +140,46 @@ window.addEventListener('keydown', e => {
     }
 });
 
+// 手機虛擬按鈕事件
+function handleMobileControl(e, newDirection) {
+    e.preventDefault();
+    if (isAutoMode) return;
+    // 避免蛇直接回頭
+    if (snake.length > 1) {
+        if (newDirection.x === -direction.x && newDirection.y === -direction.y) {
+            return;
+        }
+    }
+    direction = newDirection;
+}
+
+upBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: 0, y: -1 }));
+downBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: 0, y: 1 }));
+leftBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: -1, y: 0 }));
+rightBtn.addEventListener('touchstart', e => handleMobileControl(e, { x: 1, y: 0 }));
+
+// 開始選單按鈕事件
 speedSlider.addEventListener('input', e => {
     speedValue.textContent = e.target.value;
 });
 startEndlessButton.addEventListener('click', () => startGame('endless'));
 startChallengeButton.addEventListener('click', () => startGame('challenge'));
 
+// 返回選單按鈕
 restartButton.addEventListener('click', () => {
     gameScreen.classList.add('hidden');
     startMenu.classList.remove('hidden');
     if(gameLoop) clearInterval(gameLoop);
 });
 
+// 自動模式按鈕
 autoButton.addEventListener('click', () => {
     isAutoMode = !isAutoMode;
     autoButton.textContent = isAutoMode ? '停用自動模式' : '啟用自動模式';
     autoButton.classList.toggle('auto-active', isAutoMode);
 });
 
-
-
+// --- AI 演算法與輔助函式 ---
 function findBestDirection() {
     const head = snake[0];
     const possibleMoves = [{ x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }];
@@ -167,7 +206,13 @@ function findBestDirection() {
         bestMoves.sort((a, b) => a.distance - b.distance);
         direction = bestMoves[0].move;
     } else {
-        direction = { x: possibleMoves[0].x, y: possibleMoves[0].y };
+        // 如果無路可走，隨便選一個不會回頭的方向
+        for (const move of possibleMoves) {
+            if (snake.length === 1 || (direction.x !== -move.x || direction.y !== -move.y)) {
+                direction = move;
+                break;
+            }
+        }
     }
 }
 
@@ -230,5 +275,3 @@ function showGameOver() {
     ctx.fillText('遊戲結束', canvas.width / 2, canvas.height / 2 - 20);
     ctx.font = '20px Arial'; ctx.fillText(`最終分數: ${score}`, canvas.width / 2, canvas.height / 2 + 20);
 }
-
-// --- 【修正】刪除了檔案結尾多餘的 "}" ---
